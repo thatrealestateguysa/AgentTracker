@@ -1,103 +1,292 @@
-<!doctype html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Property Management</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 2rem; background-color: #f4f7f6; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; background-color: #fff; }
+    th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+    th { background-color: #4CAF50; color: white; }
+    tr:nth-child(even) { background-color: #f2f2f2; }
+    input, select, button { padding: 10px; margin: 5px 0; border: 1px solid #ccc; border-radius: 4px; }
+    .controls, .add-form { background-color: #fff; padding: 1rem; border-radius: 5px; margin-bottom: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    button { background-color: #4CAF50; color: white; cursor: pointer; border: none; }
+    button:disabled { background-color: #aaa; }
+    .message { padding: 10px; margin-top: 1rem; border-radius: 4px; display: none; }
+    .message.success { background-color: #d4edda; color: #155724; }
+    .message.error { background-color: #f8d7da; color: #721c24; }
+  </style>
+</head>
+<body>
 
-if (Array.isArray(data.statuses) && data.statuses.length) STATUSES = data.statuses;
-renderStatusOptions();
-} catch(err){
-renderStatusOptions();
-showMsg('Could not load statuses, using defaults.');
-}
-}
+  <h1>Property Records</h1>
 
-async function refresh(){
-try{
-const data = await callAPI({ action: 'list' });
-if(!data.ok && !data.data) throw new Error(data.error||'List failed');
-if (Array.isArray(data.statuses) && data.statuses.length) STATUSES = data.statuses;
-ROWS = data.data || [];
-renderStatusOptions();
-render();
-}catch(err){
-showMsg('Load error: '+err.message);
-}
-}
+  <div class="controls">
+    <input type="search" id="searchInput" placeholder="Search records...">
+  </div>
 
-function render(){
-const term = (document.getElementById('search').value || '').toLowerCase();
-const tbody = document.querySelector('#tbl tbody');
-tbody.innerHTML = '';
-const filtered = ROWS.filter(r => {
-const hay = `${r.propertyAddress} ${r.ownerName} ${r.ownerSurname} ${r.ownerEmail} ${r.ownerContact}`.toLowerCase();
-return hay.includes(term);
-});
-for (const r of filtered){
-const tr = document.createElement('tr');
-tr.innerHTML = `
-<td>${escapeHtml(r.propertyAddress)}</td>
-<td>${escapeHtml(r.ownerName)} ${escapeHtml(r.ownerSurname)}</td>
-<td>${escapeHtml(r.ownerContact)}</td>
-<td>${escapeHtml(r.ownerEmail)}</td>
-<td>${statusCell(r)}</td>
-`;
-tbody.appendChild(tr);
-}
-}
+  <div class="add-form">
+    <h2>Add New Record</h2>
+    <form id="addRecordForm">
+      <input type="text" name="propertyAddress" placeholder="Property Address" required>
+      <input type="text" name="ownerName" placeholder="Owner Name" required>
+      <input type="text" name="ownerSurname" placeholder="Owner Surname" required>
+      <input type="text" name="ownerContact" placeholder="Owner Contact">
+      <input type="email" name="ownerEmail" placeholder="Owner Email">
+      <select name="status" id="addStatusSelect"></select>
+      <button type="submit">Add Record</button>
+    </form>
+  </div>
 
-function statusCell(r){
-const opts = (STATUSES.length ? STATUSES : DEFAULT_STATUSES)
-.map(s => `<option value="${s}" ${s===r.status?'selected':''}>${s}</option>`).join('');
-return `<select data-row="${r.row}" onchange="updateStatus(this)">${opts}</select>`;
-}
+  <div id="messageBox" class="message"></div>
 
-async function updateStatus(sel){
-const row = sel.getAttribute('data-row');
-const status = sel.value;
-try{
-const data = await callAPI({ action:'updateStatus', row, status });
-if (!data.ok){ throw new Error(data.error||'Update failed'); }
-const idx = ROWS.findIndex(x => String(x.row) === String(row));
-if (idx > -1) ROWS[idx].status = status;
-}catch(err){
-showMsg('Update failed: '+err.message);
-}
-}
+  <table>
+    <thead>
+      <tr>
+        <th>Property Address</th>
+        <th>Owner Name</th>
+        <th>Contact</th>
+        <th>Email</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="recordsTbody">
+      </tbody>
+  </table>
 
-async function addRecord(){
-const payload = {
-action: 'add',
-propertyAddress: document.getElementById('addr').value.trim(),
-ownerName: document.getElementById('name').value.trim(),
-ownerSurname: document.getElementById('surname').value.trim(),
-ownerContact: document.getElementById('phone').value.trim(),
-ownerEmail: document.getElementById('email').value.trim(),
-status: document.getElementById('status').value
-};
-if (!payload.propertyAddress){ showMsg('Property Address is required.'); return; }
-try{
-const data = await callAPI(payload);
-if (!data.ok){ throw new Error(data.error||'Add failed'); }
-document.getElementById('addr').value = '';
-document.getElementById('name').value = '';
-document.getElementById('surname').value = '';
-document.getElementById('phone').value = '';
-document.getElementById('email').value = '';
-await refresh();
-showMsg('Record added.', true);
-}catch(err){
-showMsg('Add failed: '+err.message);
-}
-}
+  <script>
+    // A mock API function for demonstration.
+    // Replace this with your actual API call logic.
+    async function callAPI(payload) {
+      console.log("Calling API with:", payload);
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-function escapeHtml(s){
-return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#039;'}[m]));
-}
+      // Mocked responses based on action
+      if (payload.action === 'list' || payload.action === 'getStatuses') {
+        return {
+          ok: true,
+          statuses: ["Lead", "Contacted", "Viewing Scheduled", "Offer Made", "Sold"],
+          data: [
+            { row: 1, propertyAddress: "123 Maple St", ownerName: "John", ownerSurname: "Doe", ownerContact: "555-1234", ownerEmail: "john.d@example.com", status: "Lead" },
+            { row: 2, propertyAddress: "456 Oak Ave", ownerName: "Jane", ownerSurname: "Smith", ownerContact: "555-5678", ownerEmail: "jane.s@example.com", status: "Viewing Scheduled" }
+          ]
+        };
+      }
+      if (payload.action === 'updateStatus') {
+        return { ok: true };
+      }
+      if (payload.action === 'add') {
+        return { ok: true, newData: { ...payload, row: Date.now() } };
+      }
+      return { ok: false, error: 'Unknown action' };
+    }
 
-// Boot
-document.getElementById('search').addEventListener('input', render);
-document.addEventListener('DOMContentLoaded', async () => {
-renderStatusOptions();
-await loadStatuses();
-await refresh();
-});
-</script>
+
+    /**
+     * Main application module to encapsulate state and logic.
+     */
+    const app = {
+      // Centralized state
+      state: {
+        rows: [],
+        statuses: [],
+        defaultStatuses: ['Pending', 'In-Progress', 'Completed'],
+      },
+
+      // Cache DOM element references
+      elements: {
+        searchInput: null,
+        addForm: null,
+        addStatusSelect: null,
+        tableBody: null,
+        messageBox: null,
+      },
+
+      /**
+       * Initializes the application.
+       */
+      init() {
+        // Cache frequently accessed DOM elements
+        this.elements.searchInput = document.getElementById('searchInput');
+        this.elements.addForm = document.getElementById('addRecordForm');
+        this.elements.addStatusSelect = document.getElementById('addStatusSelect');
+        this.elements.tableBody = document.getElementById('recordsTbody');
+        this.elements.messageBox = document.getElementById('messageBox');
+        
+        this.bindEvents();
+        this.loadInitialData();
+      },
+
+      /**
+       * Binds all necessary event listeners.
+       */
+      bindEvents() {
+        this.elements.searchInput.addEventListener('input', () => this.renderTable());
+        this.elements.addForm.addEventListener('submit', (e) => this.handleAddRecord(e));
+        
+        // Event delegation for status updates
+        this.elements.tableBody.addEventListener('change', (e) => {
+          if (e.target.matches('select[data-row]')) {
+            this.handleStatusUpdate(e.target);
+          }
+        });
+      },
+
+      /**
+       * Fetches initial data (statuses and records) from the API.
+       */
+      async loadInitialData() {
+        try {
+          const res = await callAPI({ action: 'list' });
+          if (!res.ok) throw new Error(res.error || 'Failed to load data');
+
+          this.state.statuses = Array.isArray(res.statuses) && res.statuses.length ? res.statuses : this.state.defaultStatuses;
+          this.state.rows = res.data || [];
+          
+          this.renderStatusOptions();
+          this.renderTable();
+        } catch (err) {
+          this.showMessage(`Load error: ${err.message}`, 'error');
+        }
+      },
+
+      /**
+       * Renders the main data table based on current state and search term.
+       */
+      renderTable() {
+        const searchTerm = this.elements.searchInput.value.toLowerCase();
+        
+        const filteredRows = this.state.rows.filter(r => {
+          const fullText = `${r.propertyAddress} ${r.ownerName} ${r.ownerSurname} ${r.ownerEmail} ${r.ownerContact}`.toLowerCase();
+          return fullText.includes(searchTerm);
+        });
+
+        if (filteredRows.length === 0) {
+          this.elements.tableBody.innerHTML = `<tr><td colspan="5">No records found.</td></tr>`;
+          return;
+        }
+
+        this.elements.tableBody.innerHTML = filteredRows.map(row => this.createRowHtml(row)).join('');
+      },
+      
+      /**
+       * Generates the HTML for a single table row.
+       * @param {object} r - The record object.
+       * @returns {string} HTML string for the <tr>.
+       */
+      createRowHtml(r) {
+        const statusOptions = this.state.statuses
+          .map(s => `<option value="${this.escapeHtml(s)}" ${s === r.status ? 'selected' : ''}>${this.escapeHtml(s)}</option>`)
+          .join('');
+
+        return `
+          <tr>
+            <td>${this.escapeHtml(r.propertyAddress)}</td>
+            <td>${this.escapeHtml(r.ownerName)} ${this.escapeHtml(r.ownerSurname)}</td>
+            <td>${this.escapeHtml(r.ownerContact)}</td>
+            <td>${this.escapeHtml(r.ownerEmail)}</td>
+            <td>
+              <select data-row="${r.row}">${statusOptions}</select>
+            </td>
+          </tr>
+        `;
+      },
+
+      /**
+       * Populates the status dropdown in the "Add Record" form.
+       */
+      renderStatusOptions() {
+        this.elements.addStatusSelect.innerHTML = this.state.statuses
+          .map(s => `<option value="${this.escapeHtml(s)}">${this.escapeHtml(s)}</option>`)
+          .join('');
+      },
+
+      /**
+       * Handles the submission of the "Add Record" form.
+       * @param {Event} e - The form submit event.
+       */
+      async handleAddRecord(e) {
+        e.preventDefault();
+        const form = e.target;
+        const formData = new FormData(form);
+        const payload = { action: 'add', ...Object.fromEntries(formData.entries()) };
+        const submitButton = form.querySelector('button');
+
+        if (!payload.propertyAddress || !payload.ownerName || !payload.ownerSurname) {
+            this.showMessage('Please fill in all required fields.', 'error');
+            return;
+        }
+
+        submitButton.disabled = true;
+        try {
+          const res = await callAPI(payload);
+          if (!res.ok) throw new Error(res.error || 'Add failed');
+          
+          form.reset();
+          this.showMessage('Record added successfully.', 'success');
+          await this.loadInitialData(); // Refresh all data
+        } catch (err) {
+          this.showMessage(`Add failed: ${err.message}`, 'error');
+        } finally {
+          submitButton.disabled = false;
+        }
+      },
+
+      /**
+       * Handles the status change from a dropdown in the table.
+       * @param {HTMLSelectElement} selectElement - The select element that was changed.
+       */
+      async handleStatusUpdate(selectElement) {
+        const rowId = selectElement.dataset.row;
+        const newStatus = selectElement.value;
+        
+        try {
+          const res = await callAPI({ action: 'updateStatus', row: rowId, status: newStatus });
+          if (!res.ok) throw new Error(res.error || 'Update failed');
+
+          // Update state locally for a snappier UI, instead of a full refresh
+          const rowIndex = this.state.rows.findIndex(r => String(r.row) === String(rowId));
+          if (rowIndex > -1) {
+            this.state.rows[rowIndex].status = newStatus;
+          }
+          this.showMessage('Status updated.', 'success');
+        } catch (err) {
+          this.showMessage(`Update failed: ${err.message}`, 'error');
+          // Optional: Re-render the table to revert the dropdown if the API call fails
+          this.renderTable();
+        }
+      },
+      
+      /**
+       * A utility function to prevent XSS attacks by escaping HTML.
+       * @param {string} str - The string to escape.
+       * @returns {string} The escaped string.
+       */
+      escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      },
+
+      /**
+       * Displays a message to the user.
+       * @param {string} text - The message to show.
+       * @param {string} type - 'success' or 'error'.
+       */
+      showMessage(text, type = 'error') {
+        const el = this.elements.messageBox;
+        el.textContent = text;
+        el.className = `message ${type}`;
+        el.style.display = 'block';
+        setTimeout(() => { el.style.display = 'none'; }, 3000);
+      }
+    };
+
+    // Start the application once the DOM is fully loaded.
+    document.addEventListener('DOMContentLoaded', () => app.init());
+  </script>
 </body>
 </html>
