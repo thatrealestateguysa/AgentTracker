@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agent Tracker</title>
+<style>
+:root{--bg:#0f0f10;--panel:#18181b;--muted:#c9c9cf;--line:#2a2a30;--text:#f4f4f5;--kw:#c70000}
+*{box-sizing:border-box}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;max-width:1100px;margin:24px auto;padding:0 16px;background:var(--bg);color:var(--text)}
+h1{margin:0 0 12px;font-size:24px}
+.card{background:var(--panel);border-radius:16px;padding:16px 18px;margin:16px 0;box-shadow:0 2px 12px rgba(0,0,0,.28)}
+label{display:block;margin:8px 0 4px;font-size:13px;color:var(--muted)}
+input,select,button{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#0d0d10;color:#fff}
+button{cursor:pointer;font-weight:600}
+button.primary{background:var(--kw);border-color:var(--kw)}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}
+.grid .span-2{grid-column:span 2}
+.grid .span-3{grid-column:span 3}
+.grid .span-6{grid-column:span 6}
+table{width:100%;border-collapse:collapse;margin-top:8px}
+th,td{border-bottom:1px solid var(--line);padding:10px;text-align:left;font-size:13px}
+th{color:var(--muted);font-weight:600}
+.toolbar{display:flex;gap:10px;align-items:center;margin:10px 0}
+.right{margin-left:auto}
+.msg{margin:8px 0;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+.msg.error{border-color:#7a1f1f;background:#2a0f10}
+.msg.ok{border-color:#1f7a42;background:#0f2a16}
+</style>
+</head>
+<body>
+<h1>Agent Tracker</h1>
+
+<div class="card">
+<div class="toolbar">
+<input id="search" placeholder="Search by address, owner, email or phone" />
+<button class="right" onclick="refresh()">Reload</button>
+<button onclick="initialize()">Initialize</button>
+</div>
+
+<div id="alert" class="msg" style="display:none"></div>
+
+<div class="grid">
+<div class="span-3">
+<label>Property Address</label>
+<input id="addr" />
+</div>
+<div>
+<label>Owner's Name</label>
+<input id="name" />
+</div>
+<div>
+<label>Owner's Surname</label>
+<input id="surname" />
+</div>
+<div>
+<label>Owner's Contact Number</label>
+<input id="phone" />
+</div>
+<div class="span-2">
+<label>Owner's Email Address</label>
+<input id="email" />
+</div>
+<div>
+<label>Status</label>
+<select id="status"></select>
+</div>
+<div class="span-6">
+<button class="primary" onclick="addRecord()">Add Record</button>
+</div>
+</div>
+
+<table id="tbl">
+<thead>
+<tr>
+<th>Property Address</th>
+<th>Owner</th>
+<th>Contact</th>
+
+</html>
